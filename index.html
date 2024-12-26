@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jump Quest</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #1a1a2e);
+            color: white;
+            overflow: hidden;
+        }
+
+        /* Splash Screen Styles */
+        #splashScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a0a1a, #16213e);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            transition: opacity 0.5s;
+        }
+
+        #splashScreen.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #logo {
+            width: 150px;
+            height: 150px;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+
+        .loading-bar {
+            width: 200px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            margin-top: 20px;
+            overflow: hidden;
+        }
+
+        .loading-progress {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #4ecdc4, #45b7af);
+            transition: width 2s ease-in-out;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #player {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(45deg, #ffd700, #ffa500);
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+            transform: translateX(-50%);
+            transition: transform 0.1s;
+            z-index: 100;
+        }
+
+        .platform {
+            position: absolute;
+            height: 20px;
+            background: linear-gradient(to bottom, #8b4513, #654321);
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .obstacle {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: radial-gradient(circle at 30% 30%, #ff4444, #ff0000);
+            border-radius: 50%;
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.6);
+        }
+
+        #score {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #fff;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .screen {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 2000;
+        }
+
+        h1 {
+            font-size: 4em;
+            margin-bottom: 30px;
+            background: linear-gradient(45deg, #ffd700, #ff6b6b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        button {
+            padding: 15px 40px;
+            margin: 10px;
+            font-size: 1.5em;
+            border: none;
+            border-radius: 25px;
+            background: linear-gradient(45deg, #4ecdc4, #45b7af);
+            color: rgb(0, 0, 0);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        button:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        #particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            color: white;
+            font-size: 1.2em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            opacity: 1;
+            transition: opacity 0.5s ease;
+        }
+
+        #controls.fade-out {
+            opacity: 0;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-20px);
+            }
+            100% {
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Splash Screen -->
+    <div id="splashScreen">
+        <img id="logo" src="./logo.png" alt="Jump Quest Logo">
+        <h1>Jump Quest</h1>
+        <div class="loading-bar">
+            <div class="loading-progress"></div>
+        </div>
+    </div>
+
+    <div id="gameContainer">
+        <div id="particles"></div>
+        <div id="player"></div>
+        <div id="score">Score: 0</div>
+        <div id="controls">Tap to Jump</div>
+        
+        <div id="startScreen" class="screen">
+            <h1>Jump Quest</h1>
+            <p>Click Start to Begin</p>
+            <button id="startBtn">Start Game</button>
+        </div>
+        
+        <div id="gameOverScreen" class="screen" style="display: none;">
+            <h1>Game Over</h1>
+            <p id="finalScore"></p>
+            <button id="restartBtn">Play Again</button>
+            <button id="menuBtn">Back to Menu</button>
+        </div>
+    </div>
+
+    <script>
+        // Game elements
+const gameContainer = document.getElementById('gameContainer');
+const player = document.getElementById('player');
+const scoreElement = document.getElementById('score');
+const gameOverScreen = document.getElementById('gameOverScreen');
+const startScreen = document.getElementById('startScreen');
+const startBtn = document.getElementById('startBtn');
+const restartBtn = document.getElementById('restartBtn');
+const menuBtn = document.getElementById('menuBtn');
+const finalScore = document.getElementById('finalScore');
+const particles = document.getElementById('particles');
+const controls = document.getElementById('controls');
+
+// Game state variables
+let isJumping = false;
+let isGameOver = false;
+let gameStarted = false;
+let score = 0;
+let platforms = [];
+let obstacles = [];
+let playerVelocity = 0;
+let playerY = window.innerHeight - 90;
+let gravity = 0.6;
+let jumpForce = -15;
+let platformSpeed = 3;
+let gameLoop;
+let spawnInterval;
+
+// Initialize splash screen
+window.addEventListener('load', initializeSplashScreen);
+
+function initializeSplashScreen() {
+    const splashScreen = document.getElementById('splashScreen');
+    const loadingProgress = document.querySelector('.loading-progress');
+    const startScreen = document.getElementById('startScreen');
+
+    startScreen.style.display = 'none';
+    
+    setTimeout(() => loadingProgress.style.width = '100%', 100);
+    setTimeout(() => {
+        splashScreen.classList.add('fade-out');
+        startScreen.style.display = 'flex';
+    }, 2500);
+    setTimeout(() => splashScreen.remove(), 3000);
+}
+
+// Particle system
+function createParticles() {
+    for (let i = 0; i < 50; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        
+        const size = Math.random() * 3;
+        particle.style.width = `${size}px`;
+        particle.style.height = `${size}px`;
+        particle.style.left = `${Math.random() * 100}%`;
+        particle.style.top = `${Math.random() * 100}%`;
+        particle.style.opacity = Math.random() * 0.5 + 0.2;
+        particle.style.animation = `float ${Math.random() * 10 + 10}s linear infinite`;
+        
+        particles.appendChild(particle);
+    }
+}
+
+// Game control functions
+function startGame() {
+    cleanupGame();
+    initializeGameState();
+    setupGameControls();
+    createInitialPlatforms();
+    startGameLoops();
+}
+
+function initializeGameState() {
+    gameStarted = true;
+    isGameOver = false;
+    score = 0;
+    playerY = window.innerHeight - 90;
+    playerVelocity = 0;
+    platformSpeed = 3;
+    
+    startScreen.style.display = 'none';
+    gameOverScreen.style.display = 'none';
+    scoreElement.textContent = `Score: ${score}`;
+}
+
+function setupGameControls() {
+    controls.style.display = 'block';
+    controls.classList.remove('fade-out');
+    
+    const hideControls = () => {
+        controls.classList.add('fade-out');
+        document.removeEventListener('touchstart', hideControls);
+        document.removeEventListener('keydown', hideControls);
+    };
+
+    document.addEventListener('touchstart', hideControls, { once: true });
+    document.addEventListener('keydown', hideControls, { once: true });
+}
+
+function createInitialPlatforms() {
+    for (let i = 0; i < 3; i++) {
+        createPlatform();
+    }
+}
+
+function startGameLoops() {
+    gameLoop = setInterval(updateGame, 16);
+    spawnInterval = setInterval(createObstacle, 2000);
+}
+
+function cleanupGame() {
+    platforms.forEach(platform => platform.element.remove());
+    obstacles.forEach(obstacle => obstacle.element.remove());
+    platforms = [];
+    obstacles = [];
+    clearInterval(gameLoop);
+    clearInterval(spawnInterval);
+}
+
+function createPlatform() {
+    const platform = document.createElement('div');
+    platform.className = 'platform';
+    
+    const width = Math.random() * 50 + 100;
+    const x = window.innerWidth + Math.random() * 200;
+    const y = Math.random() * (window.innerHeight - 200) + 100;
+    
+    platform.style.width = `${width}px`;
+    platform.style.left = `${x}px`;
+    platform.style.top = `${y}px`;
+    
+    gameContainer.appendChild(platform);
+    platforms.push({ element: platform, x, y, width });
+}
+
+function createObstacle() {
+    if (!gameStarted || isGameOver) return;
+    
+    const obstacle = document.createElement('div');
+    obstacle.className = 'obstacle';
+    
+    const x = window.innerWidth;
+    const y = Math.random() * (window.innerHeight - 100) + 50;
+    
+    obstacle.style.left = `${x}px`;
+    obstacle.style.top = `${y}px`;
+    
+    gameContainer.appendChild(obstacle);
+    obstacles.push({ element: obstacle, x, y });
+}
+
+function updateGame() {
+    if (!gameStarted || isGameOver) return;
+    
+    updatePlayerPosition();
+    updatePlatforms();
+    updateObstacles();
+    ensureMinimumPlatforms();
+}
+
+function updatePlayerPosition() {
+    playerVelocity += gravity;
+    playerY += playerVelocity;
+    
+    if (playerY > window.innerHeight - 50) {
+        playerY = window.innerHeight - 50;
+        playerVelocity = 0;
+        isJumping = false;
+    }
+    
+    player.style.top = `${playerY}px`;
+    player.style.left = '50%';
+}
+
+function updatePlatforms() {
+    platforms.forEach((platform, index) => {
+        platform.x -= platformSpeed;
+        platform.element.style.left = `${platform.x}px`;
+        
+        if (platform.x + platform.width < 0) {
+            platform.element.remove();
+            platforms.splice(index, 1);
+            createPlatform();
+            updateScore();
+        }
+        
+        checkPlatformCollision(platform);
+    });
+}
+
+function updateScore() {
+    score += 10;
+    scoreElement.textContent = `Score: ${score}`;
+}
+
+function checkPlatformCollision(platform) {
+    if (playerVelocity > 0 &&
+        window.innerWidth / 2 > platform.x &&
+        window.innerWidth / 2 < platform.x + platform.width &&
+        playerY + 40 > platform.y &&
+        playerY + 40 < platform.y + 20) {
+        playerY = platform.y - 40;
+        playerVelocity = 0;
+        isJumping = false;
+    }
+}
+
+function updateObstacles() {
+    obstacles.forEach((obstacle, index) => {
+        obstacle.x -= platformSpeed * 1.5;
+        obstacle.element.style.left = `${obstacle.x}px`;
+        
+        if (obstacle.x + 40 < 0) {
+            obstacle.element.remove();
+            obstacles.splice(index, 1);
+        }
+        
+        checkObstacleCollision(obstacle);
+    });
+}
+
+function checkObstacleCollision(obstacle) {
+    if (Math.abs(window.innerWidth / 2 - obstacle.x) < 35 &&
+        Math.abs(playerY + 20 - obstacle.y - 20) < 35) {
+        gameOver();
+    }
+}
+
+function ensureMinimumPlatforms() {
+    while (platforms.length < 3) {
+        createPlatform();
+    }
+}
+
+function jump() {
+    if (!isJumping && !isGameOver) {
+        playerVelocity = jumpForce;
+        isJumping = true;
+    }
+}
+
+function gameOver() {
+    isGameOver = true;
+    gameStarted = false;
+    clearInterval(gameLoop);
+    clearInterval(spawnInterval);
+    finalScore.textContent = `Final Score: ${score}`;
+    gameOverScreen.style.display = 'flex';
+}
+
+function backToMenu() {
+    cleanupGame();
+    gameOverScreen.style.display = 'none';
+    startScreen.style.display = 'flex';
+    controls.classList.remove('fade-out');
+    controls.style.display = 'block';
+}
+
+// Event listeners
+document.addEventListener('keydown', (event) => {
+    if (event.code === 'Space') {
+        event.preventDefault();
+        if (!gameStarted && !isGameOver) {
+            startGame();
+        } else {
+            jump();
+        }
+    }
+});
+
+document.addEventListener('touchstart', (event) => {
+    event.preventDefault();
+    if (!gameStarted && !isGameOver) {
+        startGame();
+    } else {
+        jump();
+    }
+});
+
+startBtn.addEventListener('click', startGame);
+restartBtn.addEventListener('click', startGame);
+menuBtn.addEventListener('click', backToMenu);
+
+// Initialize particles on load
+createParticles();
+
+// Handle window resize
+window.addEventListener('resize', () => {
+    if (gameStarted) {
+        playerY = Math.min(playerY, window.innerHeight - 50);
+    }
+});
+</script>
+</body>
+</html>
